@@ -2,6 +2,8 @@ package Net::RabbitMQ::HTTP;
 
 use warnings;
 use strict;
+use JSON;
+use Net::RabbitMQ::HTTP::RPC;
 
 =head1 NAME
 
@@ -38,7 +40,55 @@ if you don't export anything, such as for a purely object-oriented module.
 
 =cut
 
-sub function1 {
+sub login {
+    my ($user,$pass, $uri) = @_;
+    my $req = {
+        method => 'open',
+        params => [$user, $pass, 5, undef],
+    };
+    $uri .= 'rabbitmq';
+    my $res = Net::RabbitMQ::HTTP::RPC::call($req, $uri);
+    if($res->{result}->{service}){
+        return $res->{result}->{service};
+    } else {
+        return $res->{error}->{message};
+    }
+}
+
+sub queue_declare {
+    my ($queue, $service, $uri) = @_;
+    my $req = {
+        method => 'call',
+        name => $service,
+        params => ['queue.declare' => [1, $queue,JSON::false,JSON::false,JSON::false,JSON::true,JSON::false, {}]],
+    };
+    $uri .= $service;
+    my $res = Net::RabbitMQ::HTTP::RPC::call($req, $uri);
+    if($res){
+        return $res->{result}->{method};
+    } else {
+        return $res->{error}->{message};
+    }
+}
+
+sub basic_publish {
+    my ($message, $queue, $service, $uri) = @_;
+    my $req = {
+        method => 'cast',
+        name => $service,
+        params => ['basic.publish' => [1, "", $queue,JSON::false,JSON::false],
+            $message,
+            [undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef ]],
+    };
+    $uri .= $service;
+    my $res = Net::RabbitMQ::HTTP::RPC::call($req, $uri);
+    if($res){
+        #return $res->{result}->{method};
+        return $res;
+    } else {
+        #return $res->{error}->{message};
+        return $res;
+    }
 }
 
 =head2 function2
