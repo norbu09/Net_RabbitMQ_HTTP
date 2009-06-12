@@ -17,7 +17,6 @@ Version 0.01
 
 our $VERSION = '0.01';
 
-
 =head1 SYNOPSIS
 
 Quick summary of what the module does.
@@ -36,66 +35,103 @@ if you don't export anything, such as for a purely object-oriented module.
 
 =head1 FUNCTIONS
 
-=head2 function1
+=head2 login
 
 =cut
 
 sub login {
-    my ($user,$pass, $uri) = @_;
-    my $req = {
+    my $params = shift;
+    my $req    = {
         method => 'open',
-        params => [$user, $pass, 5, undef],
+        params => [
+            $params->{user},    # user
+            $params->{pass},    # pass
+            5,                  # channel timeout
+            undef               # virtual host
+        ],
     };
-    $uri .= 'rabbitmq';
-    my $res = Net::RabbitMQ::HTTP::RPC::call($req, $uri);
-    if($res->{result}->{service}){
+    $params->{uri} .= 'rabbitmq';
+    my $res = Net::RabbitMQ::HTTP::RPC::call( $req, $params->{uri} );
+    if ( $res->{result}->{service} ) {
         return $res->{result}->{service};
-    } else {
+    }
+    else {
         return $res->{error}->{message};
     }
 }
 
 sub queue_declare {
-    my ($queue, $service, $uri) = @_;
-    my $req = {
+    my $params = shift;
+    my $req    = {
         method => 'call',
-        name => $service,
-        params => ['queue.declare' => [1, $queue,JSON::false,JSON::false,JSON::false,JSON::true,JSON::false, {}]],
+        name   => $params->{service},
+        params => [
+            'queue.declare' => [
+                1,                   # ticket
+                $params->{queue},    # queue
+                JSON::false,         # passive
+                JSON::false,         # durable
+                JSON::false,         # exclusive
+                JSON::true,          # auto_delete
+                JSON::false,         # nowait
+                {}                   # arguments
+            ]
+        ],
     };
-    $uri .= $service;
-    my $res = Net::RabbitMQ::HTTP::RPC::call($req, $uri);
-    if($res){
+    $params->{uri} .= $params->{service};
+    my $res = Net::RabbitMQ::HTTP::RPC::call( $req, $params->{uri} );
+    if ($res) {
         return $res->{result}->{method};
-    } else {
+    }
+    else {
         return $res->{error}->{message};
     }
 }
 
 sub basic_publish {
-    my ($message, $queue, $service, $uri) = @_;
-    my $req = {
+    my $params = shift;
+    my $req    = {
         method => 'cast',
-        name => $service,
-        params => ['basic.publish' => [1, "", $queue,JSON::false,JSON::false],
-            $message,
-            [undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef, undef ]],
+        name   => $params->{service},
+        params => [
+            'basic.publish' => [
+                1,                   # ticket
+                "",                  # exchange
+                $params->{queue},    # routing key
+                JSON::false,         # mandatory
+                JSON::false          # immediate
+            ],
+            $params->{message},
+            [
+                undef,               # content_type
+                undef,               # content_encoding
+                undef,               # headers
+                undef,               # delivery_mode
+                undef,               # priority
+                undef,               # correlation_id
+                undef,               # reply_to
+                undef,               # expiration
+                undef,               # message_id
+                undef,               # timestamp
+                undef,               # type
+                undef,               # user_id
+                undef,               # app_id
+                undef                # cluster_id
+            ]
+        ],
     };
-    $uri .= $service;
-    my $res = Net::RabbitMQ::HTTP::RPC::call($req, $uri);
-    if($res){
+    $params->{uri} .= $params->{service};
+    my $res = Net::RabbitMQ::HTTP::RPC::call( $req, $params->{uri} );
+    if ($res) {
+
         #return $res->{result}->{method};
         return $res;
-    } else {
+    }
+    else {
+
         #return $res->{error}->{message};
         return $res;
     }
-}
-
-=head2 function2
-
-=cut
-
-sub function2 {
 }
 
 =head1 AUTHOR
@@ -154,4 +190,4 @@ under the same terms as Perl itself.
 
 =cut
 
-1; # End of Net::RabbitMQ::HTTP
+1;    # End of Net::RabbitMQ::HTTP

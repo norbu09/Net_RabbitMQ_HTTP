@@ -5,17 +5,37 @@ use warnings;
 use Net::RabbitMQ::HTTP;
 use Data::Dumper;
 
-my $user = 'guest';
-my $pass = 'guest';
-my $uri = 'http://localhost:55672/rpc/';
-my $queue = 'test';
+my $user    = 'guest';
+my $pass    = 'guest';
+my $uri     = 'http://localhost:55672/rpc/';
+my $queue   = 'test';
 my $message = "helo world";
-my $service = Net::RabbitMQ::HTTP::login($user, $pass, $uri);
+
+my $_open = {
+    uri  => $uri,
+    user => $user,
+    pass => $pass,
+};
+
+my $service = Net::RabbitMQ::HTTP::login($_open);
 print "** Service: $service\n";
-my $res;
-if($service){
-    $res = Net::RabbitMQ::HTTP::queue_declare($queue, $service, $uri);
+if ($service) {
+
+    my $_queue = {
+        uri     => $uri,
+        queue   => $queue,
+        service => $service,
+    };
+
+    my $res = Net::RabbitMQ::HTTP::queue_declare($_queue);
     print "** Queue declare: $res **\n";
-    $res = Net::RabbitMQ::HTTP::basic_publish($message, $queue, $service, $uri);
+
+    my $_pub = {
+        uri     => $uri,
+        queue   => $queue,
+        service => $service,
+        message => $message,
+    };
+    $res = Net::RabbitMQ::HTTP::basic_publish($_pub);
+    print Dumper($res);
 }
-print Dumper($res);
