@@ -60,6 +60,35 @@ sub login {
     }
 }
 
+sub exchange_declare {
+    my $params = shift;
+    my $req    = {
+        method => 'call',
+        name   => $params->{service},
+        params => [
+            'exchange.declare' => [
+                1,                   # ticket
+                $params->{exchange},    # exchange
+                "direct",         # exchange type
+                JSON::false,         # passive
+                JSON::false,         # durable
+                JSON::true,          # auto_delete
+                JSON::false,         # internal
+                JSON::false,         # nowait
+                {}                   # arguments
+            ]
+        ],
+    };
+    $params->{uri} .= $params->{service};
+    my $res = Net::RabbitMQ::HTTP::RPC::call( $req, $params->{uri} );
+    if ($res) {
+        return $res->{result}->{method};
+    }
+    else {
+        return $res->{error}->{message};
+    }
+}
+
 sub queue_declare {
     my $params = shift;
     my $req    = {
@@ -73,6 +102,57 @@ sub queue_declare {
                 JSON::false,         # durable
                 JSON::false,         # exclusive
                 JSON::true,          # auto_delete
+                JSON::false,         # nowait
+                {}                   # arguments
+            ]
+        ],
+    };
+    $params->{uri} .= $params->{service};
+    my $res = Net::RabbitMQ::HTTP::RPC::call( $req, $params->{uri} );
+    if ($res) {
+        return $res->{result}->{method};
+    }
+    else {
+        return $res->{error}->{message};
+    }
+}
+
+sub queue_delete {
+    my $params = shift;
+    my $req    = {
+        method => 'call',
+        name   => $params->{service},
+        params => [
+            'queue.delete' => [
+                1,                   # ticket
+                $params->{queue},    # queue
+                JSON::false,         # if_unused
+                JSON::false,         # if_empty
+                JSON::false,         # nowait
+            ]
+        ],
+    };
+    $params->{uri} .= $params->{service};
+    my $res = Net::RabbitMQ::HTTP::RPC::call( $req, $params->{uri} );
+    if ($res) {
+        return $res->{result}->{method};
+    }
+    else {
+        return $res->{error}->{message};
+    }
+}
+
+sub queue_bind {
+    my $params = shift;
+    my $req    = {
+        method => 'call',
+        name   => $params->{service},
+        params => [
+            'queue.bind' => [
+                1,                   # ticket
+                $params->{queue},    # queue
+                $params->{exchange},    # exchange
+                $params->{routing_key},    # routhing key
                 JSON::false,         # nowait
                 {}                   # arguments
             ]
