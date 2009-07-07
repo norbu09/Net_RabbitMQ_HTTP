@@ -50,14 +50,18 @@ sub login {
             undef               # virtual host
         ],
     };
-    $params->{uri} .= 'rabbitmq';
-    my $res = Net::RabbitMQ::HTTP::RPC::call( $req, $params->{uri} );
-    if ( $res->{result}->{service} ) {
-        return $res->{result}->{service};
-    }
-    else {
-        return $res->{error}->{message};
-    }
+    $params->{service} = 'rabbitmq';
+    return _call($req, $params);
+}
+
+sub logout {
+    my $params = shift;
+    my $req    = {
+        method => 'close',
+        params => [
+        ],
+    };
+    return _call($req, $params);
 }
 
 sub exchange_declare {
@@ -79,14 +83,7 @@ sub exchange_declare {
             ]
         ],
     };
-    $params->{uri} .= $params->{service};
-    my $res = Net::RabbitMQ::HTTP::RPC::call( $req, $params->{uri} );
-    if ($res) {
-        return $res->{result}->{method};
-    }
-    else {
-        return $res->{error}->{message};
-    }
+    return _call($req, $params);
 }
 
 sub queue_declare {
@@ -107,14 +104,7 @@ sub queue_declare {
             ]
         ],
     };
-    $params->{uri} .= $params->{service};
-    my $res = Net::RabbitMQ::HTTP::RPC::call( $req, $params->{uri} );
-    if ($res) {
-        return $res->{result}->{method};
-    }
-    else {
-        return $res->{error}->{message};
-    }
+    return _call($req, $params);
 }
 
 sub queue_delete {
@@ -132,14 +122,7 @@ sub queue_delete {
             ]
         ],
     };
-    $params->{uri} .= $params->{service};
-    my $res = Net::RabbitMQ::HTTP::RPC::call( $req, $params->{uri} );
-    if ($res) {
-        return $res->{result}->{method};
-    }
-    else {
-        return $res->{error}->{message};
-    }
+    return _call($req, $params);
 }
 
 sub queue_bind {
@@ -158,14 +141,7 @@ sub queue_bind {
             ]
         ],
     };
-    $params->{uri} .= $params->{service};
-    my $res = Net::RabbitMQ::HTTP::RPC::call( $req, $params->{uri} );
-    if ($res) {
-        return $res->{result}->{method};
-    }
-    else {
-        return $res->{error}->{message};
-    }
+    return _call($req, $params);
 }
 
 sub basic_publish {
@@ -200,17 +176,86 @@ sub basic_publish {
             ]
         ],
     };
-    $params->{uri} .= $params->{service};
+    return _call($req, $params);
+}
+
+sub basic_consume {
+    my $params = shift;
+    my $req    = {
+        method => 'call',
+        name   => $params->{service},
+        params => [
+            'basic.consume' => [
+                1,                   # ticket
+                $params->{queue},    # queue
+                $params->{tag} || "",# consumer tag
+                JSON::false,         # no_local
+                JSON::false,         # no_ack
+                JSON::false,         # exclusive
+                JSON::false          # no_wait
+            ],
+        ],
+    };
+    return _call($req, $params);
+}
+
+sub poll {
+    my $params = shift;
+    my $req    = {
+        method => 'poll',
+        name   => $params->{service},
+        params => [
+        ],
+    };
+    return _call($req, $params);
+}
+
+sub basic_ack {
+    my $params = shift;
+    my $req    = {
+        method => 'cast',
+        name   => $params->{service},
+        params => [
+            'basic.ack' => [
+                1,
+                JSON::false          # multiple
+            ],
+            $params->{message},
+            [
+                undef,               # content_type
+                undef,               # content_encoding
+                undef,               # headers
+                undef,               # delivery_mode
+                undef,               # priority
+                undef,               # correlation_id
+                undef,               # reply_to
+                undef,               # expiration
+                undef,               # message_id
+                undef,               # timestamp
+                undef,               # type
+                undef,               # user_id
+                undef,               # app_id
+                undef                # cluster_id
+            ]
+        ],
+    };
+    return _call($req, $params);
+}
+
+sub _call {
+    my ($req, $params) = @_;
+    $params->{uri} .= $params->{service} unless $params->{uri} =~ /.*[\d\w]{10}$/;
     my $res = Net::RabbitMQ::HTTP::RPC::call( $req, $params->{uri} );
-    if ($res) {
+    return _filter($res);
+}
 
-        #return $res->{result}->{method};
-        return $res;
-    }
-    else {
-
-        #return $res->{error}->{message};
-        return $res;
+sub _filter {
+    my $msg = shift;
+    if($msg->{error}){
+        return $msg->{error};
+    } else {
+        return $msg->{result};
+        #return $msg;
     }
 }
 
