@@ -51,17 +51,16 @@ sub login {
         ],
     };
     $params->{service} = 'rabbitmq';
-    return _call($req, $params);
+    return _call( $req, $params );
 }
 
 sub logout {
     my $params = shift;
     my $req    = {
         method => 'close',
-        params => [
-        ],
+        params => [],
     };
-    return _call($req, $params);
+    return _call( $req, $params );
 }
 
 sub exchange_declare {
@@ -71,19 +70,19 @@ sub exchange_declare {
         name   => $params->{service},
         params => [
             'exchange.declare' => [
-                1,                   # ticket
+                1,                      # ticket
                 $params->{exchange},    # exchange
-                "direct",         # exchange type
-                JSON::false,         # passive
-                JSON::false,         # durable
-                JSON::true,          # auto_delete
-                JSON::false,         # internal
-                JSON::false,         # nowait
-                {}                   # arguments
+                "direct",               # exchange type
+                JSON::false,            # passive
+                JSON::false,            # durable
+                JSON::true,             # auto_delete
+                JSON::false,            # internal
+                JSON::false,            # nowait
+                {}                      # arguments
             ]
         ],
     };
-    return _call($req, $params);
+    return _call( $req, $params );
 }
 
 sub queue_declare {
@@ -104,7 +103,7 @@ sub queue_declare {
             ]
         ],
     };
-    return _call($req, $params);
+    return _call( $req, $params );
 }
 
 sub queue_delete {
@@ -122,7 +121,7 @@ sub queue_delete {
             ]
         ],
     };
-    return _call($req, $params);
+    return _call( $req, $params );
 }
 
 sub queue_bind {
@@ -132,16 +131,16 @@ sub queue_bind {
         name   => $params->{service},
         params => [
             'queue.bind' => [
-                1,                   # ticket
-                $params->{queue},    # queue
-                $params->{exchange},    # exchange
+                1,                         # ticket
+                $params->{queue},          # queue
+                $params->{exchange},       # exchange
                 $params->{routing_key},    # routhing key
-                JSON::false,         # nowait
-                {}                   # arguments
+                JSON::false,               # nowait
+                {}                         # arguments
             ]
         ],
     };
-    return _call($req, $params);
+    return _call( $req, $params );
 }
 
 sub basic_publish {
@@ -176,7 +175,7 @@ sub basic_publish {
             ]
         ],
     };
-    return _call($req, $params);
+    return _call( $req, $params );
 }
 
 sub basic_consume {
@@ -188,15 +187,15 @@ sub basic_consume {
             'basic.consume' => [
                 1,                   # ticket
                 $params->{queue},    # queue
-                $params->{tag} || "",# consumer tag
-                JSON::false,         # no_local
-                JSON::false,         # no_ack
-                JSON::false,         # exclusive
-                JSON::false          # no_wait
+                $params->{tag} || "",    # consumer tag
+                JSON::false,             # no_local
+                JSON::false,             # no_ack
+                JSON::false,             # exclusive
+                JSON::false              # no_wait
             ],
         ],
     };
-    return _call($req, $params);
+    return _call( $req, $params );
 }
 
 sub poll {
@@ -204,10 +203,9 @@ sub poll {
     my $req    = {
         method => 'poll',
         name   => $params->{service},
-        params => [
-        ],
+        params => [],
     };
-    return _call($req, $params);
+    return _call( $req, $params );
 }
 
 sub basic_ack {
@@ -218,43 +216,61 @@ sub basic_ack {
         params => [
             'basic.ack' => [
                 1,
-                JSON::false          # multiple
+                JSON::false    # multiple
             ],
             $params->{message},
             [
-                undef,               # content_type
-                undef,               # content_encoding
-                undef,               # headers
-                undef,               # delivery_mode
-                undef,               # priority
-                undef,               # correlation_id
-                undef,               # reply_to
-                undef,               # expiration
-                undef,               # message_id
-                undef,               # timestamp
-                undef,               # type
-                undef,               # user_id
-                undef,               # app_id
-                undef                # cluster_id
+                undef,         # content_type
+                undef,         # content_encoding
+                undef,         # headers
+                undef,         # delivery_mode
+                undef,         # priority
+                undef,         # correlation_id
+                undef,         # reply_to
+                undef,         # expiration
+                undef,         # message_id
+                undef,         # timestamp
+                undef,         # type
+                undef,         # user_id
+                undef,         # app_id
+                undef          # cluster_id
             ]
         ],
     };
-    return _call($req, $params);
+    return _call( $req, $params );
+}
+
+sub basic_cancel {
+    my $params = shift;
+    my $req    = {
+        method => 'call',
+        name   => $params->{service},
+        params => [
+            'basic.cancel' => [
+                $params->{service},    # ticket
+                JSON::false            # no_wait
+            ],
+        ],
+    };
+    return _call( $req, $params );
 }
 
 sub _call {
-    my ($req, $params) = @_;
-    $params->{uri} .= $params->{service} unless $params->{uri} =~ /.*[\d\w]{10}$/;
+    my ( $req, $params ) = @_;
+    $params->{uri} .= $params->{service}
+      unless $params->{uri} =~ /.*[\d\w]{10}$/;
     my $res = Net::RabbitMQ::HTTP::RPC::call( $req, $params->{uri} );
     return _filter($res);
 }
 
 sub _filter {
     my $msg = shift;
-    if($msg->{error}){
+    if ( $msg->{error} ) {
         return $msg->{error};
-    } else {
+    }
+    else {
         return $msg->{result};
+
         #return $msg;
     }
 }

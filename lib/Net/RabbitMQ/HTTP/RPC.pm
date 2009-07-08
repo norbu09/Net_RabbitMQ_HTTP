@@ -9,19 +9,18 @@ use Carp;
 use JSON;
 
 sub call {
-    my ($req, $uri) = @_;
+    my ( $req, $uri ) = @_;
     $uri = 'http://localhost:55672/rpc/rabbitmq' unless $uri;
     $req->{version} = '1.1';
-    $req->{address} = $uri,
-    $req->{id} = int(rand(time));
-    print STDERR "** ".to_json($req)."\n";
-    my $res = _post($uri, to_json($req));
-    return(from_json($res));
+    $req->{address} = $uri, $req->{id} = int( rand(time) );
+    print STDERR "** " . to_json($req) . "\n";
+    my $res = _post( $uri, to_json($req) );
+    return ( from_json($res) );
 }
 
 sub _post {
     my ( $uri, $content ) = @_;
-    my $ua = _init();
+    my $ua  = _init();
     my $res = $ua->post(
         $uri,
         Content_Type => 'application/json',

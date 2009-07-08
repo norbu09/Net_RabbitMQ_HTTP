@@ -18,7 +18,7 @@ my $_open = {
 };
 
 my $service = Net::RabbitMQ::HTTP::login($_open);
-print "** Service: ".$service->{service}."\n";
+print "** Service: " . $service->{service} . "\n";
 if ($service) {
 
     my $_queue = {
@@ -36,16 +36,19 @@ if ($service) {
         service => $service->{service},
         message => $message,
     };
+
     #my $res = Net::RabbitMQ::HTTP::basic_publish($_pub);
     my $res = Net::RabbitMQ::HTTP::basic_consume($_pub);
     print Dumper($res);
     $res = Net::RabbitMQ::HTTP::poll($_pub);
     print Dumper($res);
-    if($res->[0]){
-        print "** msg: ".$res->[0]->{content}."\n";
+    if ( $res->[0] ) {
+        print "** msg: " . $res->[0]->{content} . "\n";
         $_pub->{tag} = $res->[0]->{args}->[0];
         $res = Net::RabbitMQ::HTTP::basic_ack($_pub);
     }
+    $res = Net::RabbitMQ::HTTP::basic_cancel($_pub);
+    print Dumper($res);
     $res = Net::RabbitMQ::HTTP::logout($_pub);
     print Dumper($res);
 }
