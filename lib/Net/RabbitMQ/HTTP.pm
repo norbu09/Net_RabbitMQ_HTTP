@@ -11,11 +11,11 @@ Net::RabbitMQ::HTTP - The great new Net::RabbitMQ::HTTP!
 
 =head1 VERSION
 
-Version 0.01
+Version 0.2
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.2';
 
 =head1 SYNOPSIS
 
@@ -46,8 +46,8 @@ sub login {
         params => [
             $params->{user},    # user
             $params->{pass},    # pass
-            5,                  # channel timeout
-            undef               # virtual host
+            $params->{timeout} || 5,    # channel timeout
+            $params->{vhost}            # virtual host
         ],
     };
     $params->{service} = 'rabbitmq';
@@ -70,15 +70,16 @@ sub exchange_declare {
         name   => $params->{service},
         params => [
             'exchange.declare' => [
-                1,                      # ticket
-                $params->{exchange},    # exchange
-                "direct",               # exchange type
-                JSON::false,            # passive
-                JSON::false,            # durable
-                JSON::true,             # auto_delete
-                JSON::false,            # internal
-                JSON::false,            # nowait
-                {}                      # arguments
+                $params->{ticket} || 1,    # ticket
+                $params->{exchange},       # exchange
+                $params->{type} || "direct",    # exchange type
+                ( $params->{passive}     ? JSON::true : JSON::false ), # passive
+                ( $params->{durable}     ? JSON::true : JSON::false ), # durable
+                ( $params->{auto_delete} ? JSON::true : JSON::false )
+                ,    # auto_delete
+                ( $params->{internal} ? JSON::true : JSON::false ),   # internal
+                ( $params->{nowait}   ? JSON::true : JSON::false ),   # nowait
+                {}    # arguments
             ]
         ],
     };
@@ -92,14 +93,15 @@ sub queue_declare {
         name   => $params->{service},
         params => [
             'queue.declare' => [
-                1,                   # ticket
-                $params->{queue},    # queue
-                JSON::false,         # passive
-                JSON::false,         # durable
-                JSON::false,         # exclusive
-                JSON::true,          # auto_delete
-                JSON::false,         # nowait
-                {}                   # arguments
+                $params->{ticket} || 1,    # ticket
+                $params->{queue},          # queue
+                ( $params->{passive}   ? JSON::true : JSON::false ), # passive
+                ( $params->{durable}   ? JSON::true : JSON::false ), # durable
+                ( $params->{exclusive} ? JSON::true : JSON::false ), # exclusive
+                ( $params->{auto_delete} ? JSON::true : JSON::false )
+                ,    # auto_delete
+                ( $params->{nowait} ? JSON::true : JSON::false ),    # nowait
+                {}                                                   # arguments
             ]
         ],
     };
@@ -113,11 +115,11 @@ sub queue_delete {
         name   => $params->{service},
         params => [
             'queue.delete' => [
-                1,                   # ticket
-                $params->{queue},    # queue
-                JSON::false,         # if_unused
-                JSON::false,         # if_empty
-                JSON::false,         # nowait
+                $params->{ticket} || 1,    # ticket
+                $params->{queue},          # queue
+                ( $params->{if_unused} ? JSON::true : JSON::false ), # if_unused
+                ( $params->{if_empty}  ? JSON::true : JSON::false ), # if_empty
+                ( $params->{nowait}    ? JSON::true : JSON::false ), # nowait
             ]
         ],
     };
@@ -131,12 +133,12 @@ sub queue_bind {
         name   => $params->{service},
         params => [
             'queue.bind' => [
-                1,                         # ticket
+                $params->{ticket} || 1,    # ticket
                 $params->{queue},          # queue
                 $params->{exchange},       # exchange
                 $params->{routing_key},    # routhing key
-                JSON::false,               # nowait
-                {}                         # arguments
+                ( $params->{nowait} ? JSON::true : JSON::false ),    # nowait
+                {}                                                   # arguments
             ]
         ],
     };
@@ -150,28 +152,28 @@ sub basic_publish {
         name   => $params->{service},
         params => [
             'basic.publish' => [
-                1,                   # ticket
-                "",                  # exchange
-                $params->{queue},    # routing key
-                JSON::false,         # mandatory
-                JSON::false          # immediate
+                $params->{ticket}   || 1,     # ticket
+                $params->{exchange} || "",    # exchange
+                $params->{queue},             # routing key
+                ( $params->{mandatory} ? JSON::true : JSON::false ), # mandatory
+                ( $params->{immediate} ? JSON::true : JSON::false ), # immediate
             ],
             $params->{message},
             [
-                undef,               # content_type
-                undef,               # content_encoding
-                undef,               # headers
-                undef,               # delivery_mode
-                undef,               # priority
-                undef,               # correlation_id
-                undef,               # reply_to
-                undef,               # expiration
-                undef,               # message_id
-                undef,               # timestamp
-                undef,               # type
-                undef,               # user_id
-                undef,               # app_id
-                undef                # cluster_id
+                $parms->{content_type}      || undef,    # content_type
+                $params->{content_encoding} || undef,    # content_encoding
+                $params->{headers}          || undef,    # headers
+                $params->{delivery_mode}    || undef,    # delivery_mode
+                $params->{priority}         || undef,    # priority
+                $params->{correlation_id}   || undef,    # correlation_id
+                $params->{reply_to}         || undef,    # reply_to
+                $params->{expiration}       || undef,    # expiration
+                $params->{message_id}       || undef,    # message_id
+                $params->{timestamp}        || undef,    # timestamp
+                $params->{type}             || undef,    # type
+                $params->{user_id}          || undef,    # user_id
+                $params->{app_id}           || undef,    # app_id
+                $params->{cluster_id}       || undef     # cluster_id
             ]
         ],
     };
@@ -185,13 +187,13 @@ sub basic_consume {
         name   => $params->{service},
         params => [
             'basic.consume' => [
-                1,                   # ticket
-                $params->{queue},    # queue
-                $params->{tag} || "",    # consumer tag
-                JSON::false,             # no_local
-                JSON::false,             # no_ack
-                JSON::false,             # exclusive
-                JSON::false              # no_wait
+                $params->{ticket} || 1,    # ticket
+                $params->{queue},          # queue
+                $params->{tag} || "",      # consumer tag
+                ( $params->{no_local}  ? JSON::true : JSON::false ), # no_local
+                ( $params->{no_ack}    ? JSON::true : JSON::false ), # no_ack
+                ( $params->{exclusive} ? JSON::true : JSON::false ), # exclusive
+                ( $params->{nowait}    ? JSON::true : JSON::false ), # nowait
             ],
         ],
     };
@@ -215,25 +217,25 @@ sub basic_ack {
         name   => $params->{service},
         params => [
             'basic.ack' => [
-                1,
-                JSON::false    # multiple
+                $params->{ticket} || 1,    # ticket
+                ( $params->{multiple} ? JSON::true : JSON::false ),   # multiple
             ],
             $params->{message},
             [
-                undef,         # content_type
-                undef,         # content_encoding
-                undef,         # headers
-                undef,         # delivery_mode
-                undef,         # priority
-                undef,         # correlation_id
-                undef,         # reply_to
-                undef,         # expiration
-                undef,         # message_id
-                undef,         # timestamp
-                undef,         # type
-                undef,         # user_id
-                undef,         # app_id
-                undef          # cluster_id
+                $parms->{content_type}      || undef,    # content_type
+                $params->{content_encoding} || undef,    # content_encoding
+                $params->{headers}          || undef,    # headers
+                $params->{delivery_mode}    || undef,    # delivery_mode
+                $params->{priority}         || undef,    # priority
+                $params->{correlation_id}   || undef,    # correlation_id
+                $params->{reply_to}         || undef,    # reply_to
+                $params->{expiration}       || undef,    # expiration
+                $params->{message_id}       || undef,    # message_id
+                $params->{timestamp}        || undef,    # timestamp
+                $params->{type}             || undef,    # type
+                $params->{user_id}          || undef,    # user_id
+                $params->{app_id}           || undef,    # app_id
+                $params->{cluster_id}       || undef     # cluster_id
             ]
         ],
     };
@@ -248,7 +250,7 @@ sub basic_cancel {
         params => [
             'basic.cancel' => [
                 $params->{service},    # ticket
-                JSON::false            # no_wait
+                ( $params->{nowait} ? JSON::true : JSON::false ),    # nowait
             ],
         ],
     };

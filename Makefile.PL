@@ -7,6 +7,9 @@ license  'perl';
 
 build_requires 'Test::More';
 
+requires 'JSON';
+requires 'LWP::UserAgent';
+
 auto_install;
 
 WriteAll;
